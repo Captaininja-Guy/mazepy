@@ -5,7 +5,7 @@ A maze library based off of the book [Mazes for Programmers](https://pragprog.co
 
 Installation
 ```bash
-pip install maze-py
+pip install the-maze-py
 ```
 
 Maze Shapes Supported
