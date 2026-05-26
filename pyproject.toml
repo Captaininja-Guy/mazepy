@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0", "markdown-it-py>=2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maze-py"
+version = "0.1.0"
+description = "A package that generates mazes"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "numpy>=2.4.6",
+    "pyvista>=0.48.4",
+    "matplotlib>=3.10.9",
+    "pillow>=12.2.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Natural Language :: English",
+]
+keywords = ["maze"]
+
+
+[project.urls]
+Homepage = "https://github.com/Captaininja-Guy/mazepy"
+
+[tool.setuptools.packages.find]
+where = ["src"]
