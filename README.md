@@ -32,8 +32,8 @@ Generation Algorithms Supported
 * Fractal Tesselation (only rectangualar)
 * Growing Tree
 * Hunt and Kill
-* Kruskals (not polar, haxagonal, or triangular)
-* Origin Shift
+* Kruskals (not polar, hexagonal, or triangular)
+* [Origin Shift](https://www.youtube.com/watch?v=zbXKcDVV4G0&pp=ygUbb3JpZ2luIHNoaWZ0IG1hemUgbWluZWNyYWZ0)
 * Prims (Simplified, True, Modified)
 * Recursive Backtrack (DFS)
 * Recursive Division (only Rectangular)
