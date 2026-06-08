@@ -83,7 +83,7 @@ def Sidewinder(grid: Grid) -> None:
                 run = []
             else:
                 if _hex: # Hex actions
-                    if not at_northern_boundry:
+                    if cell.column % 2 == 0:
                         cell.link(cell.northeast)
                     else:
                         cell.link(cell.southeast)

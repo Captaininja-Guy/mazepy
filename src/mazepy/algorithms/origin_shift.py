@@ -124,8 +124,8 @@ def OriginShift(grid: Grid, *, times: int|None = None, percentage: float = 1, se
             number_of_cells = grid.size
         else:
             visited = {(row, col): False for row in range(grid.rows) for col in range(grid.columns)}
-            visited[root.row, root.col] = True
-            number_of_cells = sum(len(row) for row in grid.grid)
+            visited[root.row, root.column] = True
+            number_of_cells = grid.size
 
         if percentage > 1:
             percentage /= 100

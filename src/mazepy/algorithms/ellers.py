@@ -72,6 +72,8 @@ def Ellers(grid: Grid) -> None:
         warnings.warn('Ellers on 3d grids produces seperate 2d grids with no up/down connections', RuntimeWarning)
     if grid.type_of_grid == 'cube':
         warnings.warn('Ellers on a cube grid may not produce a perfect maze', RuntimeWarning)
+    if grid.type_of_grid == 'weave':
+        warnings.warn('Sidewinder will NOT produce weaved grid', RuntimeWarning)
 
     if threed:
         each_level = grid.each_level()
@@ -89,7 +91,10 @@ def Ellers(grid: Grid) -> None:
             for cell in row:
                 if not _hex and not polar and not cell.west: continue
                 elif _hex and cell.column%2 == 0 and not cell.northwest: continue
-                elif polar and len(row) == 1: continue
+                elif polar and len(row) == 1: 
+                    out_cell = rand.choice(cell.outward)
+                    cell.link(out_cell)
+                    continue
 
 
                 _set = row_state.set_for(cell)

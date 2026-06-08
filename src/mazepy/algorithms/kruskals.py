@@ -1,6 +1,7 @@
 import random as rand
 from ..grid_not_supported_exception import GridNotSupportedException
 from ..grids.grid import Grid
+import warnings
 
 class State:
     def __init__(self, grid):
@@ -93,6 +94,8 @@ def Kruskals(grid: Grid, state=None) -> None:
         raise GridNotSupportedException('Hex Grid not compatible with Kruskals, it will show blank Grid')
     if grid.type_of_grid == 'sphere':
         raise GridNotSupportedException('Sphere Grid not compatible with Kruskals, it will show most grid lines only')
+    if grid.type_of_grid == 'weave': # Warning for Weaved Grids as weaving will not occur
+        warnings.warn('Sidewinder will NOT produce weaved grid', RuntimeWarning)
     if state is None:
         state = State(grid)
 
