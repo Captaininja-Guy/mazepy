@@ -84,7 +84,7 @@ def __getattr__(name):
         return ColoredGrid
     
     if name == "ColoredHexGrid":
-        from .grid import ColoredHexGrid
+        from .colored_hex_grid import ColoredHexGrid
         return ColoredHexGrid
     
     if name == "ColoredPolarGrid":

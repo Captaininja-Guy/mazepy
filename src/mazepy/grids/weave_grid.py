@@ -26,7 +26,7 @@ class WeaveGrid(Grid):
         for under_cell in self.under_cells:
             yield under_cell
     
-    def to_png(self, *, cell_size: int = 50, edge_width: int = 3, buffer: int = 4, inset: float = None) -> Image.Image:
+    def to_png(self, *, cell_size: int = 50, edge_width: int = 3, buffer: int = 4, inset: float = None, bypass_check: bool = False) -> Image.Image:
         '''
         Converts the Grid to a png representation
 
@@ -40,7 +40,7 @@ class WeaveGrid(Grid):
         Returns:
             The image representation of the grid
         '''
-        return super().to_png(cell_size=cell_size, edge_width=edge_width, buffer=buffer, inset=inset or .2)
+        return super().to_png(cell_size=cell_size, edge_width=edge_width, buffer=buffer, inset=inset or .2, bypass_check=bypass_check)
 
     def to_png_with_inset(self, draw, cell, mode, cell_size, edge_width, buffer, x, y, inset):
         if isinstance(cell, OverCell):

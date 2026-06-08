@@ -13,6 +13,7 @@ class PolarGrid(Grid):
         if columns is not None and rows != columns:
             raise TypeError('PolarGrid requires rows = columns or 1 positional arguement')
         super().__init__(rows, 1, **kwargs)
+        self.size = sum(1 for _ in self.each_cell)
 
     def prepare_grid(self):
         rows = [None] * self.rows
@@ -50,7 +51,7 @@ class PolarGrid(Grid):
             return None
         return self.grid[row][column % len(self.grid[row])]
 
-    def show(self, *, cell_size: int = 30, edge_width: int = 1, buffer: int =10) -> None:
+    def show(self, *, cell_size: int = 30, edge_width: int = 1, buffer: int = 10) -> None:
         '''
         Shows to_png() in image viewer, see to_png for more info
         '''
@@ -58,7 +59,7 @@ class PolarGrid(Grid):
         if img is not None:
             img.show()
     
-    def to_png(self, *, cell_size: int = 30, edge_width: int = 1, buffer: int =10, bypass_check: bool = False) -> Image.Image:
+    def to_png(self, *, cell_size: int = 30, edge_width: int = 1, buffer: int = 10, bypass_check: bool = False) -> Image.Image:
         '''
         Converts the Grid to a png representation
 
