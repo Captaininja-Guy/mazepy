@@ -18,7 +18,7 @@ def play_create_2d(algorithm: str, size: int = 10, interval: int = 200, *, show:
         size (optional int) = 10, size of maze
         interval (opitonal int) = 200, ms interval for matplotlib animation frames
 
-        show (optional bool) = True, wether to show animation after making it
+        show (optional bool) = True, whether to show animation after making it
         growing_tree_func (optional Callable) = lambda x: rand.choice(x), function used for GrowingTree
         origin_shift_times (optional int) = 200, times OriginShift shifts origin
 
@@ -80,11 +80,9 @@ def _prepare_animation(function):
             paused = not paused
         fig.canvas.mpl_connect('button_press_event', toggle_pause)
 
-
         match algorithm.lower():
             case 'binarytree':
-                done = [False]
-                animation = _bintree_anim(fig, update, grid, image, img, interval, done)
+                animation = _bintree_anim(fig, update, grid, image, img, interval)
             case 'sidewinder':
                 run = []
                 animation = _sidewinder_anim(fig, update, grid, image, img, run, interval)
@@ -257,35 +255,32 @@ def add_arrow(cell, image, direction):
 
 # region Binary Tree
 @_prepare_animation
-def _play_BinaryTree2d(frame, *args):
-    grid, image, img, done = args
-    if not done[0]:
-        grid_size = grid.rows
-        cell = grid[divmod(frame, grid_size)]
+def _play_BinaryTree2d(frame):
+    frame, grid, image, img = frame
+    grid_size = grid.rows
+    cell = grid[divmod(frame, grid_size)]
 
-        if (rand.randrange(2) == 0 or cell.column == grid_size-1) and cell.row != 0:
-            clear_north_wall(cell, image)
-        elif cell.column != grid.columns - 1:
-            clear_east_wall(cell, image)
+    if (rand.randrange(2) == 0 or cell.column == grid_size-1) and cell.row != 0:
+        clear_north_wall(cell, image)
+    elif cell.column != grid.columns - 1:
+        clear_east_wall(cell, image)
         
-        if cell.row == grid.rows-1 and cell.column == grid.columns-1:
-            done[0] = True
-
     img.set_data(image)
     return (img,)
 
-def _bintree_anim(fig, update, grid, image, img, interval, done):
-    return animation.FuncAnimation(fig=fig, func=update, frames=grid.size, 
-                                   fargs=(grid, image, img, done), interval=interval, blit=True)
+def _bintree_anim(fig, update, grid, image, img, interval):
+    def frames():
+        nonlocal grid, image, img
+        for i in range(grid.size):
+            yield i, grid, image, img
+    return animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
 
 #endregion
 
 # region Sidewinder
 @_prepare_animation
-def _play_Sidewinder2d(frame, *args):
-    grid, image, img, run = args
-    if run and run[0] == 'done':
-        return (img,)
+def _play_Sidewinder2d(frame):
+    frame, grid, image, img, run = frame
     grid_size = grid.rows
     cell = grid[divmod(frame, grid_size)]
     
@@ -300,63 +295,64 @@ def _play_Sidewinder2d(frame, *args):
     else:
         clear_east_wall(cell, image)
     
-    if cell.row == grid.rows-1 and cell.column == grid.columns-1:
-        run.append('done')
-    
     img.set_data(image)
     return (img,)
 
 def _sidewinder_anim(fig, update, grid, image, img, run, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=grid.size, fargs=(grid, image, img, run), interval=interval, blit=True)
+    def frames():
+        nonlocal grid, image, img, run
+        for i in range(grid.size):
+            yield i, grid, image, img, run
+    return animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
 
 # endregion
 
 # region Aldous Broder
 @_prepare_animation
-def _play_AldousBroder2d(frame, *args):
-    grid, image, img, before_cell, unvisited = args
-    if unvisited[0] != 'done':
-        if unvisited[0] == 0:
-            prev_cell = before_cell.pop(0)
+def _play_AldousBroder2d(frame):
+    grid, image, img, before_cell, unvisited = frame
+    if unvisited[0] == 0:
+        prev_cell = before_cell.pop(0)
 
-            color_in_cell(prev_cell, image, 255)
-            img.set_data(image)
-            unvisited[0] = 'done'
-            return (img,)
+        color_in_cell(prev_cell, image, 255)
+        img.set_data(image)
+        unvisited[0] = 'done'
+        return (img,)
 
-        if not before_cell:
-            cell = grid.random_cell()
-        else:
-            prev_cell = before_cell.pop(0)
+    if not before_cell:
+        cell = grid.random_cell()
+    else:
+        prev_cell = before_cell.pop(0)
 
-            color_in_cell(prev_cell, image, 255)
+        color_in_cell(prev_cell, image, 255)
 
-            cell = rand.choice(prev_cell.neighbors())
-            if not cell.links():
-                cell.link(prev_cell)
-                unvisited[0] -= 1
-                clear_wall(cell, prev_cell, image)
+        cell = rand.choice(prev_cell.neighbors())
+        if not cell.links():
+            cell.link(prev_cell)
+            unvisited[0] -= 1
+            clear_wall(cell, prev_cell, image)
 
-        color_in_cell(cell, image, (100, 251, 0))
-        before_cell.append(cell)
+    color_in_cell(cell, image, (100, 251, 0))
+    before_cell.append(cell)
 
-    
-    
     img.set_data(image)
+
     return (img,)
     
 def _ab_anim(fig, update, grid, image, img, prev_cell, unvisited, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=grid.size, 
-                         fargs=(grid, image, img, prev_cell, unvisited), interval=interval, blit=True)
+    def frames():
+        while unvisited[0] != 'done':
+            yield grid, image, img, prev_cell, unvisited
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim
 
 # endregion
 
 # region Wilsons
 @_prepare_animation
-def _play_Wilsons2d(frame, *args):
-    image, img, path, unvisited = args
-    if not unvisited:
-        return (img,)
+def _play_Wilsons2d(frame):
+    image, img, path, unvisited = frame
     
     if path and path[0] == 'start':
         first = rand.choice(unvisited)
@@ -401,59 +397,66 @@ def _play_Wilsons2d(frame, *args):
     return (img,)
 
 def _wilsons_anim(fig, update, image, img, path, unvisited, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=image.shape[0]//50, 
-                         fargs=(image, img, path, unvisited), interval=interval, blit=True)
+    def frames():
+        nonlocal image, img, path, unvisited
+        while unvisited:
+            yield image, img, path, unvisited
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim
 
 # endregion
 
 # region RecursiveBacktrack
 @_prepare_animation
-def _play_RecursiveBacktrack2d(frame, *args):
-    grid, image, img, stack = args
-    if stack:
-        append_cell = True
-        if stack[0] == 'start':
-            stack.pop()
-            cell = grid.random_cell()
+def _play_RecursiveBacktrack2d(frame):
+    grid, image, img, stack = frame
+    append_cell = True
+    if stack[0] == 'start':
+        stack.pop()
+        cell = grid.random_cell()
+    else:
+        prev_cell = stack[-1]
+        color_in_cell(prev_cell, image, 255)
+
+        unvisited_neighbors = [cell for cell in prev_cell.neighbors() if not cell.links()]
+        if unvisited_neighbors:
+            cell = rand.choice(unvisited_neighbors)
+            cell.link(prev_cell)
+            clear_wall(cell, prev_cell, image)
         else:
-            prev_cell = stack[-1]
-            color_in_cell(prev_cell, image, 255)
-
-            unvisited_neighbors = [cell for cell in prev_cell.neighbors() if not cell.links()]
-            if unvisited_neighbors:
-                cell = rand.choice(unvisited_neighbors)
-                cell.link(prev_cell)
-                clear_wall(cell, prev_cell, image)
-            else:
-                stack.pop(-1)
-                if len(stack) == 0:
-                    color_in_cell(prev_cell, image, 255)
-                    img.set_data(image)
-                    return (img,)
-                cell = stack[-1]
-                append_cell = False
+            stack.pop(-1)
+            if len(stack) == 0:
+                color_in_cell(prev_cell, image, 255)
+                img.set_data(image)
+                return (img,)
+            cell = stack[-1]
+            append_cell = False
 
 
-        color_in_cell(cell, image, (100, 251, 0))
-        if append_cell:
-            stack.append(cell)
+    color_in_cell(cell, image, (100, 251, 0))
+    if append_cell:
+        stack.append(cell)
 
-        img.set_data(image)
+    img.set_data(image)
     return (img,)
 
 def _recurback_anim(fig, update, grid, image, img, stack, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=grid.size, 
-                                   fargs=(grid, image, img, stack), interval=interval, blit=True)
+    def frames():
+        nonlocal grid, image, img, stack
+        while stack:
+            yield grid, image, img, stack
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim        
 
 # endregion
 
 # region Hunt and Kill
 @_prepare_animation
-def _play_HuntandKill2d(frame, *args):
-    grid, image, img, mode = args
+def _play_HuntandKill2d(frame):
+    grid, image, img, mode = frame
 
-    if mode[0] == 'done':
-        return (img,)
     if mode[0] == 'kill' and len(mode) == 1:
         cell = grid.random_cell()
         color_in_cell(cell, image, (83, 173, 91))
@@ -511,22 +514,21 @@ def _play_HuntandKill2d(frame, *args):
     return (img,)
 
 def _hak_anim(fig, update, grid, image, img, mode, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=grid.size, 
-                                   fargs=(grid, image, img, mode), interval=interval, blit=True)
+    def frames():
+        nonlocal grid, image, img, mode
+        while mode[0] != 'done':
+            yield grid, image, img, mode
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim        
 
 # endregion
 
 # region Kruskals
 @_prepare_animation
-def _play_Kruskals2d(frame, *args):
-    image, img, state = args
+def _play_Kruskals2d(frame):
+    image, img, state = frame
     neighbors = state.neighbors
-    
-    if frame == 0:
-        rand.shuffle(neighbors)
-
-    if not neighbors:
-        return (img,)
     
     left, right = neighbors.pop()
     while not state.can_merge(left, right):
@@ -542,17 +544,21 @@ def _play_Kruskals2d(frame, *args):
     return (img,)
 
 def _kruskals_anim(fig, update, image, img, state, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=image.shape[0]//50, 
-                         fargs=(image, img, state), interval=interval, blit=True)
+    def frames():
+        nonlocal image, img, state
+        rand.shuffle(state.neighbors)
+        while state.neighbors:
+            yield image, img, state
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim
 
 # endregion
 
 # region Simplified Prims
 @_prepare_animation
-def _play_SimplifiedPrims2d(frame, *args):
-    image, img, active = args
-    if not active:
-        return (img,)
+def _play_SimplifiedPrims2d(frame):
+    image, img, active = frame
     
     cell = rand.choice(active)
     availible_neighbors = [c for c in cell.neighbors() if not c.links()]
@@ -576,19 +582,21 @@ def _play_SimplifiedPrims2d(frame, *args):
     return (img,)
 
 def _simplifiedprims_anim(fig, update, image, img, active, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=image.shape[0]//50, 
-                                   fargs=(image, img, active), interval=interval, blit=True)
+    def frames():
+        nonlocal image, img, active
+        while active:
+            yield image, img, active
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim        
 
 # endregion
 
 # region True Prims
 @_prepare_animation
-def _play_TruePrims2d(frame, *args):
-    image, img, active, costs = args
+def _play_TruePrims2d(frame):
+    image, img, active, costs = frame
 
-    if not active:
-        return (img,)
-    
     cell = min(active, key=lambda x: costs[x])
     color_in_cell(cell, image, (83, 173, 91))
 
@@ -614,17 +622,20 @@ def _play_TruePrims2d(frame, *args):
     return (img,)
 
 def _trueprims_anim(fig, update, image, img, active, costs, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=image.shape[0]//50, 
-                                   fargs=(image, img, active, costs), interval=interval, blit=True)
+    def frames():
+        nonlocal image, img, active, costs
+        while active:
+            yield image, img, active, costs
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim        
 
 # endregion
 
 # region Modified Prims
 @_prepare_animation
-def _play_ModifiedPrims2d(frame, *args):
-    image, img, _in, frontier, out = args
-    if not frontier:
-        return (img,)
+def _play_ModifiedPrims2d(frame):
+    image, img, _in, frontier, out = frame
     
     cell = rand.choice(frontier)
     _in.append(cell)
@@ -648,17 +659,20 @@ def _play_ModifiedPrims2d(frame, *args):
     return (img,)
 
 def _modifiedprims_anim(fig, update, image, img, _in, frontier, out, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=image.shape[0]//50,
-                                   fargs=(image, img, _in, frontier, out), interval=interval, blit=True)
+    def frames():
+        nonlocal image, img, _in, frontier, out
+        while frontier:
+            yield image, img, _in, frontier, out
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim
 
 # endregion
 
 # region Growing Tree
 @_prepare_animation
-def _play_GrowingTree2d(frame, *args):
-    image, img, func, active = args
-    if not active:
-        return (img,)
+def _play_GrowingTree2d(frame):
+    image, img, func, active = frame
     
     cell = func(active)
     availible_neighbors = [c for c in cell.neighbors() if not c.links()]
@@ -679,20 +693,22 @@ def _play_GrowingTree2d(frame, *args):
     return (img,)
 
 def _growingtree_anim(fig, update, image, img, func, active, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=image.shape[0]//50, 
-                                   fargs=(image, img, func, active), interval=interval, blit=True)
+    def frames():
+        nonlocal image, img, func, active
+        while active:
+            yield image, img, func, active
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim        
 
 # endregion
 
 # region Ellers
 @_prepare_animation
-def _play_Ellers2d(frame, *args):
-    grid, image, img, state = args
+def _play_Ellers2d(frame):
+    frame, grid, image, img, state = frame
     row_state = state[0]
 
-    if state[0] == 'done':
-        return (img,)
-    
     coords = divmod(frame, grid.rows)
     cell = grid[coords]
     if not cell.west:
@@ -726,15 +742,20 @@ def _play_Ellers2d(frame, *args):
     return (img,)
     
 def _ellers_anim(fig, update, grid, image, img, state, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=grid.size, 
-                                   fargs=(grid, image, img, state), interval=interval, blit=True)
+    def frames():
+        nonlocal grid, image, img, state
+        i = -1
+        while state[0] != 'done':
+            i += 1
+            yield i, grid, image, img, state
+    return animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
 
 # endregion
 
 # region Origin Shift
 @_prepare_animation
-def _play_OriginShift2d(frame, *args):
-    grid, image, img, root_list = args
+def _play_OriginShift2d(frame):
+    frame, grid, image, img, root_list = frame
 
     if frame == 0:
         for cell in grid.each_cell():
@@ -778,18 +799,19 @@ def _play_OriginShift2d(frame, *args):
     return (img,)
 
 def _originshift_anim(fig, update, times, grid, image, img, root, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=times+1, fargs=(grid, image, img, root), 
-                                   interval=interval, blit=True, repeat=False)
+    def frames():
+        nonlocal grid, image, img, root, times
+        for i in range(times+1):
+            yield i, grid, image, img, root
+
+    return animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
 
 # endregion
 
 # region Recursive Division
 @_prepare_animation
-def _play_RecursiveDivision2d(frame, *args):
-    region, grid, image, img = args
-
-    if region[0] == 'done':
-        return (img,)
+def _play_RecursiveDivision2d(frame):
+    region, grid, image, img = frame
     
     while region[-1][2] <= 1 or region[-1][3] <= 1:
         region.pop()
@@ -832,7 +854,12 @@ def _play_RecursiveDivision2d(frame, *args):
 
 
 def _recursivedivision_anim(fig, update, region, grid, image, img, interval):
-    return animation.FuncAnimation(fig=fig, func=update, frames=grid.size, fargs=(region, grid, image, img), 
-                                   interval=interval, blit=True)
+    def frames():
+        nonlocal region, grid, image, img
+        while region[0] != 'done':
+            yield region, grid, image, img
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=frames, interval=interval, blit=True, cache_frame_data=False)
+
+    return anim        
 
 # endregion
